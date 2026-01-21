@@ -1,5 +1,6 @@
 import gi
 import os
+import sys
 import subprocess
 import json
 from pathlib import Path
@@ -10,7 +11,18 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 gi.require_version("GtkSource", "5")
 
+os.environ['PATH'] = os.environ.get('PATH', '')
+subprocess.run(["arm-none-eabi-gcc", "--version"])
+
 from gi.repository import Gtk, Adw, Gio, GtkSource, GLib, Pango
+
+def get_resource_path(relative_path):
+    if getattr(sys, 'frozen', False):
+        base_path = Path(sys.executable).parent
+    else:
+        base_path = Path(__file__).parent
+    return base_path / relative_path
+
 
 GRUVBOX_DARK_XML = '''<?xml version="1.0" encoding="UTF-8"?>
 <style-scheme id="gruvbox-dark" name="Gruvbox Dark" version="1.0">
@@ -932,9 +944,9 @@ class MyWindow(Adw.ApplicationWindow):
         dialog.destroy()
     
     def create_project_structure(self, folder, project_name):
-        core_path = os.path.join(os.path.dirname(__file__), "core")
+        core_path = get_resource_path("core")
 
-        if not os.path.exists(core_path):
+        if not core_path.exists():
             dialog = Adw.AlertDialog(
                 title="Core Missing",
                 body=f"Core template folder not found:\n{core_path}",
@@ -944,24 +956,20 @@ class MyWindow(Adw.ApplicationWindow):
             return
 
         try:
-            for item in os.listdir(core_path):
-                src = os.path.join(core_path, item)
-                dst = os.path.join(folder, item)
+            for item in core_path.iterdir():
+                src = item
+                dst = Path(folder) / item.name
 
-                if os.path.isdir(src):
+                if src.is_dir():
                     shutil.copytree(src, dst, dirs_exist_ok=True)
                 else:
                     shutil.copy2(src, dst)
 
-            makefile_path = os.path.join(folder, "Makefile")
-            if os.path.exists(makefile_path):
-                with open(makefile_path, "r") as f:
-                    content = f.read()
-
+            makefile_path = Path(folder) / "Makefile"
+            if makefile_path.exists():
+                content = makefile_path.read_text()
                 content = content.replace("{{PROJECT_NAME}}", project_name)
-
-                with open(makefile_path, "w") as f:
-                    f.write(content)
+                makefile_path.write_text(content)
 
         except Exception as e:
             dialog = Adw.AlertDialog(
@@ -970,7 +978,6 @@ class MyWindow(Adw.ApplicationWindow):
                 close_response="ok"
             )
             dialog.present(self)
-
     
     def load_project(self, folder, project_name):
         self.project_path = folder
