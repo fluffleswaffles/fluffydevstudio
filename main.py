@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from datetime import datetime
 import shutil
+import time
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -1171,7 +1172,139 @@ class MyWindow(Adw.ApplicationWindow):
         dialog.present(self)
     
     def on_debug(self, button):
-        print("Debug clicked - Not implemented yet")
+        if not self.project_path:
+            return
+
+        self.save_all_files()
+
+        try:
+            result = subprocess.run(['lsusb'], capture_output=True, text=True)
+            if 'st-link' not in result.stdout.lower():
+                dialog = Adw.AlertDialog(
+                    title="ST-Link Not Found",
+                    body="ST-Link device not detected. Please connect your ST-Link and try again.",
+                    close_response="ok"
+                )
+                dialog.present(self)
+                return
+        except:
+            pass
+
+        try:
+            subprocess.run(['arm-none-eabi-gdb', '--version'], capture_output=True, check=True)
+        except:
+            dialog = Adw.AlertDialog(
+                title="GDB Not Found",
+                body="arm-none-eabi-gdb is not installed or not in PATH.",
+                close_response="ok"
+            )
+            dialog.present(self)
+            return
+
+        try:
+            subprocess.run(['st-util', '--version'], capture_output=True, check=True)
+        except:
+            dialog = Adw.AlertDialog(
+                title="ST-Util Not Found",
+                body="st-util is not installed or not in PATH.",
+                close_response="ok"
+            )
+            dialog.present(self)
+            return
+
+        instructions_dialog = Adw.MessageDialog(
+            transient_for=self,
+            heading="Starting Debugger",
+            body="GDB and ST-Util are being launched. Please wait..."
+        )
+        instructions_dialog.add_response("ok", "OK")
+        
+        def on_instructions_response(dialog, response):
+            dialog.destroy()
+        
+        instructions_dialog.connect("response", on_instructions_response)
+        instructions_dialog.present()
+
+        terminal_emulators = [
+            ['gnome-terminal', '--'],
+            ['xterm', '-e'],
+            ['konsole', '-e'],
+            ['mate-terminal', '-e'],
+            ['xfce4-terminal', '-e'],
+            ['lxterminal', '-e'],
+        ]
+        
+        available_terminal = None
+        
+        for terminal_cmd in terminal_emulators:
+            try:
+                subprocess.run([terminal_cmd[0], '--version'], capture_output=True, timeout=1, check=False)
+                available_terminal = terminal_cmd
+                break
+            except:
+                continue
+
+        if available_terminal:
+            try:
+                st_util_cmd = available_terminal + ['st-util']
+                subprocess.Popen(st_util_cmd)
+            except Exception as e:
+                error_dialog = Adw.AlertDialog(
+                    title="Terminal Error",
+                    body=f"Could not launch st-util: {str(e)}",
+                    close_response="ok"
+                )
+                error_dialog.present(self)
+                return
+        else:
+            try:
+                subprocess.Popen(['st-util'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+            except Exception as e:
+                error_dialog = Adw.AlertDialog(
+                    title="Error",
+                    body=f"Could not launch st-util: {str(e)}",
+                    close_response="ok"
+                )
+                error_dialog.present(self)
+                return
+
+        time.sleep(1)
+        
+        if available_terminal:
+            try:
+                gdb_cmd = available_terminal + ['arm-none-eabi-gdb', '-ex', 'target extended-remote :4242']
+                subprocess.Popen(gdb_cmd)
+            except Exception as e:
+                error_dialog = Adw.AlertDialog(
+                    title="Terminal Error",
+                    body=f"Could not launch GDB: {str(e)}",
+                    close_response="ok"
+                )
+                error_dialog.present(self)
+                return
+        else:
+            try:
+                subprocess.Popen(['arm-none-eabi-gdb', '-ex', 'target extended-remote :4242'], start_new_session=True)
+            except Exception as e:
+                error_dialog = Adw.AlertDialog(
+                    title="Error",
+                    body=f"Could not launch GDB: {str(e)}",
+                    close_response="ok"
+                )
+                error_dialog.present(self)
+                return
+
+        next_steps_dialog = Adw.MessageDialog(
+            transient_for=self,
+            heading="Debugger Started",
+            body="GDB and ST-Util are now running.\n\nNext steps in GDB:\n"
+                 "1. Use 'monitor reset halt' to reset, run and halt the cpu\n"
+                 "2. Use 'continue' to run\n"
+                 "4. Use standard GDB commands to debug\n\n"
+                 "ST-Util is listening on port 4242."
+        )
+        next_steps_dialog.add_response("ok", "Got it")
+        next_steps_dialog.present()
     
     def on_flash(self, button):
         if not self.project_path:
