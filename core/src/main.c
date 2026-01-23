@@ -1,6 +1,7 @@
 #include "fluffy.h"
 
 void setup() {
+    fluffy_init();
     // do once
 }
 

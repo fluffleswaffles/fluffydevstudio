@@ -197,8 +197,8 @@ class OptionsDialog(Adw.PreferencesWindow):
     def check_stlink(self, button):
         try:
             result = subprocess.run(['lsusb'], capture_output=True, text=True)
-            if 'ST-Link' in result.stdout:
-                lines = [line for line in result.stdout.split('\n') if 'ST-Link' in line]
+            if 'st-link' in result.stdout.lower():
+                lines = [line for line in result.stdout.split('\n') if 'st-link' in line.lower()]
                 device_info = lines[0].split('ID ')[-1] if lines else "Connected"
                 self.status_row.set_subtitle(f"Connected - {device_info}")
             else:
@@ -1178,7 +1178,7 @@ class MyWindow(Adw.ApplicationWindow):
             return
         try:
             result = subprocess.run(['lsusb'], capture_output=True, text=True)
-            if 'ST-Link' not in result.stdout:
+            if 'st-link' not in result.stdout.lower():
                 dialog = Adw.AlertDialog(
                     title="ST-Link Not Found",
                     body="ST-Link device not detected. Please connect your ST-Link and try again.",

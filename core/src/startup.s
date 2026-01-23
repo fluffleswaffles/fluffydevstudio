@@ -23,7 +23,7 @@ g_pfnVectors:
     .word  DebugMon_Handler
     .word  0
     .word  PendSV_Handler
-    .word  SysTick_Handler
+    .word  SysTick_Handler 
 
 .section .text.Default_Handler, "ax", %progbits
 Default_Handler:
@@ -45,8 +45,7 @@ Default_Handler:
 .thumb_set DebugMon_Handler, Default_Handler
 .weak PendSV_Handler
 .thumb_set PendSV_Handler, Default_Handler
-.weak SysTick_Handler
-.thumb_set SysTick_Handler, Default_Handler
+.extern SysTick_Handler
 
 .section .text.Reset_Handler, "ax", %progbits
 Reset_Handler:
@@ -72,6 +71,7 @@ Reset_Handler:
     strlt r2, [r0], #4
     blt   2b
     bl    SystemInit
+    bl    SysTick_Init
     bl    main
 LoopForever:
     b LoopForever

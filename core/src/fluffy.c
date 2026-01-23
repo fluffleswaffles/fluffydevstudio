@@ -1,5 +1,8 @@
 #include "fluffy.h"
 
+#define RCC_BASE 0x40021000
+#define RCC_APB2ENR (*(volatile uint32_t*)(RCC_BASE + 0x18))
+
 uint32_t millis(void) {
     return systick_count;
 }
@@ -9,6 +12,10 @@ void delay(uint32_t ms) {
     while ((millis() - start) < ms);
 }
 
+void fluffy_init(void) {
+    RCC_APB2ENR |= (1 << 2) | (1 << 3);
+    SysTick_Init(); 
+}
 
 void pinMode(Pin pin, int mode) {
     GPIO_TypeDef* port = (GPIO_TypeDef*)pin.port;

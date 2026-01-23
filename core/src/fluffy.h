@@ -1,8 +1,6 @@
 #pragma once
 #include <stdint.h>
 
-/* ================= LOW LEVEL ================= */
-
 #define GPIOA_BASE 0x40010800
 #define GPIOB_BASE 0x40010C00
 
@@ -19,8 +17,6 @@ typedef struct {
 #define GPIOA ((GPIO_TypeDef*)GPIOA_BASE)
 #define GPIOB ((GPIO_TypeDef*)GPIOB_BASE)
 
-/* ================= PIN MASKS ================= */
-
 #define GPIO_PIN_0   ((uint16_t)0x0001)
 #define GPIO_PIN_1   ((uint16_t)0x0002)
 #define GPIO_PIN_2   ((uint16_t)0x0004)
@@ -30,15 +26,11 @@ typedef struct {
 #define GPIO_PIN_6   ((uint16_t)0x0040)
 #define GPIO_PIN_7   ((uint16_t)0x0080)
 
-/* ================= PIN TYPE ================= */
-
 typedef struct {
     GPIO_TypeDef* port;
     uint16_t pin;
     uint8_t adc_channel;
 } Pin;
-
-/* ================= MODES ================= */
 
 #define INPUT         0
 #define OUTPUT        1
@@ -46,8 +38,6 @@ typedef struct {
 
 #define LOW   0
 #define HIGH  1
-
-/* ================= API ================= */
 
 void pinMode(Pin pin, int mode);
 void digitalWrite(Pin pin, int value);
@@ -57,8 +47,6 @@ uint32_t millis(void);
 void delay(uint32_t ms);
 
 uint16_t analogRead(Pin pin);
-
-/* ================= PINS ================= */
 
 #define PA0  ((Pin){GPIOA, GPIO_PIN_0, 0})
 #define PA1  ((Pin){GPIOA, GPIO_PIN_1, 1})

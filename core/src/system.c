@@ -15,6 +15,10 @@ void SystemCoreClockUpdate(void)
 #define RCC_CFGR      (*(volatile uint32_t*)(RCC_BASE + 0x04))
 #define FLASH_ACR     (*(volatile uint32_t*)(FLASH_BASE + 0x00))
 
+#define SYSTICK_CTRL (*(volatile uint32_t*)0xE000E010)
+#define SYSTICK_LOAD (*(volatile uint32_t*)0xE000E014)
+#define SYSTICK_VAL  (*(volatile uint32_t*)0xE000E018)
+
 void SystemInit(void)
 {
     RCC_CR |= (1 << 16);
@@ -30,6 +34,12 @@ void SystemInit(void)
     while (((RCC_CFGR >> 2) & 0x3) != 0x2);
 
     SystemCoreClockUpdate();
+}
+
+void SysTick_Init(void){
+    SYSTICK_LOAD = (SystemCoreClock / 1000) - 1;
+    SYSTICK_VAL = 0;
+    SYSTICK_CTRL = 0x07;
 }
 
 void SysTick_Handler(void) {
